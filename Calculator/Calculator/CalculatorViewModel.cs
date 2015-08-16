@@ -8,23 +8,22 @@ using System.Windows.Input;
 namespace Calculator
 {
     class CalculatorViewModel : ViewModelBase
-    {
-        private decimal _currentValue;
-        private int _decimal;
-        private decimal _storedValue;
-        private bool _isFloat;
+    { 
+        private string _currentPresent;
+
+        private string _storedValue;
         private Operation _pendingOperation;
 
-        public decimal CurrentValue
+        public string CurrentValue
         {
-            get { return this._currentValue; }
+            get { return this._currentPresent; }
             set
             {
-                Set(ref this._currentValue, value);
+                Set(ref this._currentPresent, value);
             }
         }
 
-        public decimal StoredValue
+        public string StoredValue
         {
             get { return this._storedValue; }
             set
@@ -45,9 +44,8 @@ namespace Calculator
 
         public CalculatorViewModel()
         {
-            this.CurrentValue = 0;
-            this.StoredValue = 0;
-            this._isFloat = false;
+            this.CurrentValue = "0";
+            this.StoredValue = "0";
             this._pendingOperation = Operation.None;
             
             this.KeyCommand = new RelayCommand(this.AppendKeys);
@@ -69,10 +67,27 @@ namespace Calculator
                 {
                     throw new ArgumentException("Invalid key", "key");
                 }
-                if (!this._isFloat)
-                    this.CurrentValue = (this.CurrentValue * 10) + (int)char.GetNumericValue(key);
+                if (this.CurrentValue == "0" || this.CurrentValue.Contains("Invalid"))
+                {
+                    this.CurrentValue = key.ToString();
+                }
                 else
-                    this.CurrentValue = (this.CurrentValue * 10) + (int)char.GetNumericValue(key);
+                {
+                    this.CurrentValue = this.CurrentValue + key;
+                }
+/*
+                this._currentValue = 
+
+                if (this._decimal == 0)
+                {
+                    this._currentValue = this._currentValue * 10 + (int)(Char.GetNumericValue(key));
+                }
+                else
+                {
+                    this._currentValue += Math.Pow(0.1, this._decimal) * (int)(Char.GetNumericValue(key));
+                    this._decimal++;
+                }
+                */
             }
         }
 
@@ -80,8 +95,8 @@ namespace Calculator
         {
             this.Calculate();
             this._pendingOperation = Operation.Add;
-            this.StoredValue = this.CurrentValue;
-            this.CurrentValue = 0;
+            this.StoredValue =this.CurrentValue;
+            this.CurrentValue = "0";
         }
 
         private void Minus(object _)
@@ -89,7 +104,7 @@ namespace Calculator
             this.Calculate();
             this._pendingOperation = Operation.Subtract;
             this.StoredValue = this.CurrentValue;
-            this.CurrentValue = 0;
+            this.CurrentValue = "0";
         }
 
         private void Multiply(object _)
@@ -97,7 +112,7 @@ namespace Calculator
             this.Calculate();
             this._pendingOperation = Operation.Multiply;
             this.StoredValue = this.CurrentValue;
-            this.CurrentValue = 0;
+            this.CurrentValue = "0";
         }
 
         private void Divide(object _)
@@ -105,38 +120,52 @@ namespace Calculator
             this.Calculate();
             this._pendingOperation = Operation.Divide;
             this.StoredValue = this.CurrentValue;
-            this.CurrentValue = 0;
+            this.CurrentValue = "0";
         }
 
         private void Equal(object _)
         {
             this.Calculate();
-            this.StoredValue = 0;
+            this.StoredValue = "0";
         }
 
 
         private void Point(object _)
         {
-            this._isFloat = true;
+            if (!this.CurrentValue.Contains('0'))
+            {
+                this.CurrentValue += '.';
+            }
         }
 
         private void Calculate()
         {
-            switch (this._pendingOperation)
+            try {
+                switch (this._pendingOperation)
+                {
+                    case Operation.Add:
+                        this.CurrentValue = (Convert.ToDouble(this.StoredValue) + Convert.ToDouble(this.CurrentValue)).ToString();
+                        break;
+                    case Operation.Subtract:
+                        this.CurrentValue = (Convert.ToDouble(this.StoredValue) - Convert.ToDouble(this.CurrentValue)).ToString();
+                        break;
+                    case Operation.Multiply:
+                        this.CurrentValue = (Convert.ToDouble(this.StoredValue) * Convert.ToDouble(this.CurrentValue)).ToString();
+                        break;
+                    case Operation.Divide:
+                        if (this.CurrentValue == "0")
+                        {
+                            this.CurrentValue = "Invalid number to divide";
+                            break;
+                        }
+                        this.CurrentValue = (Convert.ToDouble(this.StoredValue) / Convert.ToDouble(this.CurrentValue)).ToString();
+                        break;
+                    case Operation.None: return;
+                }
+            }
+            catch (Exception e)
             {
-                case Operation.Add:
-                    this.CurrentValue = this.StoredValue + this.CurrentValue;
-                    break;
-                case Operation.Subtract:
-                    this.CurrentValue = this.StoredValue - this.CurrentValue;
-                    break;
-                case Operation.Multiply:
-                    this.CurrentValue = this.StoredValue * this.CurrentValue;
-                    break;
-                case Operation.Divide:
-                    this.CurrentValue = this.StoredValue / this.CurrentValue;
-                    break;
-                case Operation.None: return;
+                this.CurrentValue = "Invalid Calculation";
             }
 
             this._pendingOperation = Operation.None;
@@ -144,8 +173,9 @@ namespace Calculator
 
         private void Back(object _)
         {
-            this.CurrentValue = 0;
-            this.StoredValue = 0;
+            this.CurrentValue = "0";
+            this._pendingOperation = Operation.None;
+            this.StoredValue = "0";
         }
     }
 
